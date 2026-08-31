@@ -10,11 +10,13 @@ import { Button, Segmented, Space, Tooltip, Typography, message } from 'antd'
 import { useI18n } from '../i18n'
 import type { JsonValue } from '../types/json'
 
-type WorkflowPhase = 'start' | 'sample' | 'analysis' | 'build'
+type WorkflowPhase = 'start' | 'sample' | 'analysis' | 'excel' | 'build'
 
 interface StudioHeaderProps {
   phase: WorkflowPhase
   analysisReady: boolean
+  excelReady: boolean
+  prepareSource: 'sample' | 'excel' | null
   value: JsonValue
   canUndo: boolean
   canRedo: boolean
@@ -23,11 +25,14 @@ interface StudioHeaderProps {
   onRedo: () => void
   onImportBuilder: (file: File) => void
   onImportSample: (file: File) => void
+  onImportExcel: (file: File) => void
 }
 
 export const StudioHeader = ({
   phase,
   analysisReady,
+  excelReady,
+  prepareSource,
   value,
   canUndo,
   canRedo,
@@ -36,6 +41,7 @@ export const StudioHeader = ({
   onRedo,
   onImportBuilder,
   onImportSample,
+  onImportExcel,
 }: StudioHeaderProps) => {
   const [messageApi, contextHolder] = message.useMessage()
   const { language, setLanguage, t } = useI18n()
@@ -55,7 +61,7 @@ export const StudioHeader = ({
     messageApi.success(t('header.jsonCopied'))
   }
 
-  const activeStep = phase === 'start' ? 0 : phase === 'sample' || phase === 'analysis' ? 1 : 2
+  const activeStep = phase === 'start' ? 0 : phase === 'sample' || phase === 'analysis' || phase === 'excel' ? 1 : 2
   const steps = [
     {
       index: 0,
@@ -67,11 +73,11 @@ export const StudioHeader = ({
     },
     {
       index: 1,
-      label: t('header.analyze'),
-      caption: t('header.analyzeCaptionOptional'),
+      label: t('header.prepare'),
+      caption: t('header.prepareCaption'),
       disabled: false,
-      done: analysisReady,
-      action: () => onPhaseChange(analysisReady ? 'analysis' : 'sample'),
+      done: analysisReady || (prepareSource === 'excel' && excelReady),
+      action: () => onPhaseChange(prepareSource === 'excel' && excelReady ? 'excel' : analysisReady ? 'analysis' : 'sample'),
     },
     {
       index: 2,
@@ -92,19 +98,21 @@ export const StudioHeader = ({
   ]
 
   const openTargetsBuilder = phase === 'start' || phase === 'build'
-  const openLabel = phase === 'start' || phase === 'build'
-    ? t('header.openJson')
-    : phase === 'analysis'
-      ? t('header.loadAnotherSample')
-      : t('header.loadSample')
+  const openLabel = phase === 'excel'
+    ? t('excel.loadAnother')
+    : phase === 'start' || phase === 'build'
+      ? t('header.openJson')
+      : phase === 'analysis'
+        ? t('header.loadAnotherSample')
+        : t('header.loadSample')
 
   return (
     <header className="studio-header friendly-header">
       {contextHolder}
       <div className="header-top-row">
         <div className="brand-block">
-          <Typography.Title level={3}>Gerardo's awesome JSON Studio</Typography.Title>
-          <Typography.Text type="secondary">{t('header.taglineV8')}</Typography.Text>
+          <Typography.Title level={3}>Gerardo&apos;s awesome JSON Studio</Typography.Title>
+          <Typography.Text type="secondary">{t('header.taglineV9')}</Typography.Text>
         </div>
 
         <div className="workflow-steps" aria-label={t('header.workflowAria')}>
@@ -143,7 +151,7 @@ export const StudioHeader = ({
           {phase === 'build' && <Button icon={<RedoOutlined />} disabled={!canRedo} onClick={onRedo} />}
           <Button
             icon={<FolderOpenOutlined />}
-            onClick={() => document.getElementById(openTargetsBuilder ? 'builder-import' : 'sample-import')?.click()}
+            onClick={() => document.getElementById(phase === 'excel' ? 'excel-import' : openTargetsBuilder ? 'builder-import' : 'sample-import')?.click()}
           >
             {openLabel}
           </Button>
@@ -166,6 +174,17 @@ export const StudioHeader = ({
             onChange={event => {
               const file = event.target.files?.[0]
               if (file) onImportSample(file)
+              event.currentTarget.value = ''
+            }}
+          />
+          <input
+            id="excel-import"
+            type="file"
+            accept=".xlsx,.xls,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv"
+            hidden
+            onChange={event => {
+              const file = event.target.files?.[0]
+              if (file) onImportExcel(file)
               event.currentTarget.value = ''
             }}
           />

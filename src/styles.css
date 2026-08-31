@@ -1087,3 +1087,890 @@ button, input, textarea { font: inherit; }
   .guided-field-row { grid-template-columns: 26px 1fr 1fr 32px; }
   .guided-value-cell { grid-column: 2 / 4; }
 }
+
+/* V9 — Excel source analysis + visual column mapping */
+.start-option-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.start-option-card { min-height: 208px; }
+.excel-start-card {
+  border-color: rgba(74, 222, 128, .18) !important;
+}
+.excel-start-icon {
+  background: rgba(74, 222, 128, .10);
+  color: #86efac;
+}
+.excel-workspace { overflow: hidden; }
+.excel-flow-panel { overflow: auto; }
+.excel-mapper {
+  width: min(1320px, 100%);
+  margin: 0 auto;
+  padding: 22px 24px 60px;
+  display: grid;
+  gap: 16px;
+}
+.excel-mapper-header,
+.section-heading-row,
+.excel-result-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+.excel-mapper-header {
+  padding: 4px 2px 8px;
+}
+.excel-file-title {
+  min-width: 0;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+.excel-file-title .ant-typography { margin: 0 !important; }
+.excel-file-icon {
+  width: 44px;
+  height: 44px;
+  flex: 0 0 44px;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  background: rgba(74, 222, 128, .10);
+  border: 1px solid rgba(74, 222, 128, .18);
+  color: #86efac;
+  font-size: 20px;
+}
+.excel-section {
+  padding: 18px;
+  border: 1px solid rgba(255,255,255,.075);
+  border-radius: 14px;
+  background: rgba(255,255,255,.022);
+}
+.section-heading-row { margin-bottom: 14px; }
+.section-heading-row .ant-typography { margin: 0 0 3px !important; }
+.section-heading-row .ant-typography-secondary { font-size: 11px; line-height: 1.55; }
+.excel-suggestion-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+.excel-suggestion-card {
+  min-width: 0;
+  cursor: pointer;
+  border-color: rgba(255,255,255,.075) !important;
+  background: rgba(255,255,255,.018) !important;
+  transition: .15s ease;
+}
+.excel-suggestion-card:hover {
+  transform: translateY(-1px);
+  border-color: rgba(124,140,255,.34) !important;
+}
+.excel-suggestion-card.selected {
+  border-color: rgba(124,140,255,.58) !important;
+  background: rgba(124,140,255,.06) !important;
+  box-shadow: inset 0 0 0 1px rgba(124,140,255,.06);
+}
+.excel-suggestion-card .ant-card-body {
+  min-height: 176px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.excel-suggestion-card .ant-typography-secondary {
+  flex: 1;
+  font-size: 10px;
+  line-height: 1.55;
+}
+.suggestion-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.suggestion-icon {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border-radius: 9px;
+  background: rgba(124,140,255,.11);
+  color: #b9c2ff;
+  font-size: 16px;
+}
+.mapping-grid {
+  display: grid;
+  grid-template-columns: 58px minmax(150px, .9fr) minmax(130px, .7fr) minmax(200px, 1.2fr) minmax(180px, .85fr);
+  gap: 10px;
+  align-items: center;
+}
+.mapping-grid-header {
+  padding: 0 10px 8px;
+  color: rgba(255,255,255,.42);
+  font-size: 9px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+}
+.mapping-list {
+  display: grid;
+  gap: 6px;
+}
+.mapping-row {
+  padding: 8px 10px;
+  border: 1px solid rgba(255,255,255,.055);
+  border-radius: 10px;
+  background: rgba(255,255,255,.018);
+}
+.mapping-row.disabled { opacity: .42; }
+.mapping-source { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.mapping-source strong,
+.mapping-source small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mapping-source strong { font-family: "SFMono-Regular", Consolas, monospace; font-size: 11px; }
+.mapping-source small { color: rgba(255,255,255,.38); font-size: 9px; }
+.mapping-path-help { display: block; margin-top: 9px; font-size: 10px; }
+.excel-output-options {
+  margin-top: 13px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+.excel-output-options label { display: grid; gap: 5px; }
+.excel-output-options label > span {
+  color: rgba(255,255,255,.48);
+  font-size: 10px;
+  font-weight: 700;
+}
+.excel-table-scroll { overflow: hidden; border-radius: 10px; border: 1px solid rgba(255,255,255,.055); }
+.excel-table-scroll .ant-table-wrapper { width: 100%; }
+.excel-table-scroll .ant-table { font-size: 11px; }
+.excel-result-section { border-color: rgba(124,140,255,.18); }
+.excel-result-actions { margin-bottom: 12px; }
+.excel-result-actions .ant-typography { margin: 0 0 3px !important; }
+.excel-json-preview {
+  max-height: 340px;
+  margin: 0;
+  padding: 14px 16px;
+  overflow: auto;
+  border: 1px solid rgba(255,255,255,.06);
+  border-radius: 11px;
+  background: #09111e;
+  color: rgba(226,232,240,.82);
+  font: 11px/1.65 "SFMono-Regular", Consolas, monospace;
+  white-space: pre;
+}
+
+@media (max-width: 1180px) {
+  .excel-suggestion-grid { grid-template-columns: repeat(2, minmax(0,1fr)); }
+  .mapping-grid { grid-template-columns: 48px 1fr .75fr 1.2fr .9fr; }
+}
+@media (max-width: 860px) {
+  .start-option-grid { grid-template-columns: 1fr; }
+  .excel-mapper-header,
+  .section-heading-row,
+  .excel-result-actions { align-items: flex-start; flex-direction: column; }
+  .excel-suggestion-grid { grid-template-columns: 1fr; }
+  .mapping-grid-header { display: none; }
+  .mapping-row {
+    grid-template-columns: 34px 1fr;
+    align-items: start;
+  }
+  .mapping-row > :nth-child(n+3) { grid-column: 2; width: 100%; }
+  .excel-output-options { grid-template-columns: 1fr; }
+}
+
+/* V9 branding length */
+@media (min-width: 1451px) {
+  .header-top-row { grid-template-columns: minmax(280px, .9fr) minmax(520px, 1.6fr) minmax(330px, 1fr); }
+}
+@media (min-width: 1151px) and (max-width: 1450px) {
+  .header-top-row { grid-template-columns: 280px 1fr; }
+}
+.brand-block .ant-typography:first-child {
+  font-size: 19px !important;
+  line-height: 1.18 !important;
+}
+
+/* V10 — compact Excel mapping workspace */
+.excel-workspace,
+.excel-flow-panel {
+  min-width: 0;
+  overflow: hidden;
+}
+.excel-flow-panel {
+  background: rgba(11, 18, 31, .72);
+}
+.excel-mapper-v10 {
+  width: 100%;
+  max-width: 1480px;
+  height: 100%;
+  min-width: 0;
+  margin: 0 auto;
+  padding: 12px 16px 36px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  display: grid;
+  align-content: start;
+  gap: 12px;
+}
+.excel-context-sticky {
+  position: sticky;
+  top: 0;
+  z-index: 8;
+  min-width: 0;
+  padding: 10px 12px;
+  display: grid;
+  grid-template-columns: minmax(210px, .8fr) minmax(400px, 1.25fr) minmax(360px, auto);
+  gap: 14px;
+  align-items: center;
+  border: 1px solid rgba(255,255,255,.09);
+  border-radius: 13px;
+  background: rgba(10, 17, 30, .96);
+  box-shadow: 0 12px 28px rgba(0,0,0,.22);
+  backdrop-filter: blur(16px);
+}
+.excel-file-copy { min-width: 0; }
+.excel-file-copy .ant-typography { margin: 0 !important; }
+.excel-file-copy h4 { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 14px !important; }
+.excel-file-copy .ant-typography-secondary { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 10px; }
+.excel-context-metrics {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(72px, .65fr)) minmax(130px, 1.3fr);
+  gap: 6px;
+}
+.excel-context-metric {
+  min-width: 0;
+  min-height: 44px;
+  padding: 6px 8px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  border: 1px solid rgba(255,255,255,.055);
+  border-radius: 9px;
+  background: rgba(255,255,255,.02);
+}
+.excel-context-metric span {
+  color: rgba(255,255,255,.38);
+  font-size: 8px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+}
+.excel-context-metric strong {
+  margin-top: 1px;
+  color: rgba(255,255,255,.88);
+  font-size: 13px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.excel-context-metric small {
+  color: rgba(255,255,255,.42);
+  font-size: 8px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.excel-context-actions {
+  min-width: 0;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 7px;
+}
+.excel-sheet-select { width: 170px; min-width: 120px; }
+
+.excel-mapper-v10 .excel-section {
+  padding: 12px 14px;
+  border-radius: 12px;
+}
+.excel-section-compact-heading,
+.excel-mapping-toolbar {
+  min-width: 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+.excel-section-compact-heading .ant-typography,
+.excel-mapping-toolbar .ant-typography { margin: 0 0 2px !important; }
+.excel-section-compact-heading .ant-typography-secondary,
+.excel-mapping-toolbar .ant-typography-secondary { font-size: 10px; line-height: 1.4; }
+
+.excel-shape-section {
+  display: grid;
+  gap: 9px;
+}
+.excel-shape-controls {
+  min-width: 0;
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+}
+.excel-shape-controls > .ant-segmented {
+  flex: 0 1 auto;
+  min-width: 420px;
+}
+.excel-shape-controls .ant-segmented-item-label { padding-inline: 12px; font-size: 11px; }
+.excel-shape-options-inline {
+  min-width: 0;
+  flex: 1;
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+.excel-shape-options-inline label {
+  min-width: 150px;
+  max-width: 230px;
+  flex: 1 1 160px;
+  display: grid;
+  gap: 3px;
+}
+.excel-shape-options-inline label > span {
+  color: rgba(255,255,255,.4);
+  font-size: 8px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+}
+
+.excel-mapping-section {
+  min-height: 0;
+  display: grid;
+  gap: 8px;
+}
+.excel-mapping-toolbar { align-items: flex-end; }
+.excel-mapping-filters {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+.excel-mapping-filters .ant-input-affix-wrapper { width: min(330px, 30vw); }
+.excel-mapping-filters .ant-checkbox-wrapper { white-space: nowrap; font-size: 11px; }
+.mapping-grid-v10 {
+  grid-template-columns: 42px minmax(180px, .9fr) minmax(230px, 1.2fr) minmax(170px, .65fr);
+  gap: 8px;
+}
+.mapping-grid-header.mapping-grid-v10 {
+  padding: 3px 10px 5px;
+}
+.mapping-list-compact {
+  max-height: clamp(260px, 37vh, 410px);
+  min-height: 180px;
+  padding-right: 3px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  display: grid;
+  align-content: start;
+  gap: 4px;
+  scrollbar-gutter: stable;
+}
+.mapping-row-v10 {
+  min-width: 0;
+  min-height: 44px;
+  padding: 5px 8px;
+  border-radius: 8px;
+}
+.mapping-row-v10 > * { min-width: 0; }
+.mapping-source-compact {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.mapping-source-compact strong {
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 10px;
+}
+.mapping-source-compact span {
+  flex: 0 0 auto;
+  max-width: 150px;
+  padding: 2px 6px;
+  border-radius: 6px;
+  background: rgba(255,255,255,.045);
+  color: rgba(255,255,255,.46);
+  font-size: 8px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.mapping-row-v10 .ant-input,
+.mapping-row-v10 .ant-select-selector { font-size: 11px !important; }
+.mapping-row-v10 .ant-select { width: 100%; }
+.excel-empty-filter {
+  padding: 22px;
+  text-align: center;
+  color: rgba(255,255,255,.4);
+  font-size: 11px;
+  border: 1px dashed rgba(255,255,255,.08);
+  border-radius: 9px;
+}
+.excel-mapping-footer {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-top: 2px;
+}
+.excel-mapping-footer .mapping-path-help {
+  max-width: 62%;
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.excel-component-save-inline {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 7px;
+}
+.excel-component-save-inline > span {
+  color: rgba(255,255,255,.38);
+  font-size: 9px;
+  white-space: nowrap;
+}
+.excel-component-save-inline .ant-input { width: 180px; }
+
+.excel-optional-sections {
+  border: 1px solid rgba(255,255,255,.075) !important;
+  border-radius: 12px !important;
+  overflow: hidden;
+  background: rgba(255,255,255,.016);
+}
+.excel-optional-sections > .ant-collapse-item { border-bottom-color: rgba(255,255,255,.06) !important; }
+.excel-optional-sections > .ant-collapse-item:last-child { border-bottom: 0 !important; }
+.excel-optional-sections .ant-collapse-header {
+  min-height: 48px;
+  padding: 9px 12px !important;
+  align-items: center !important;
+}
+.excel-optional-sections .ant-collapse-content-box { padding: 4px 12px 12px !important; }
+.excel-collapse-label {
+  width: 100%;
+  min-width: 0;
+  padding-right: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.excel-collapse-label > div {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+.excel-collapse-label strong { font-size: 11px; }
+.excel-collapse-label span {
+  color: rgba(255,255,255,.4);
+  font-size: 9px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.excel-suggestion-grid-compact {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 7px;
+}
+.excel-suggestion-card-compact {
+  min-width: 0;
+  min-height: 62px;
+  padding: 8px;
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr) 30px;
+  gap: 8px;
+  align-items: center;
+  text-align: left;
+  color: inherit;
+  border: 1px solid rgba(255,255,255,.065);
+  border-radius: 9px;
+  background: rgba(255,255,255,.018);
+  cursor: pointer;
+  transition: .12s ease;
+}
+.excel-suggestion-card-compact:hover,
+.excel-suggestion-card-compact.selected {
+  border-color: rgba(124,140,255,.42);
+  background: rgba(124,140,255,.055);
+}
+.excel-suggestion-card-compact .suggestion-icon {
+  width: 30px;
+  height: 30px;
+  font-size: 13px;
+}
+.suggestion-copy-compact {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.suggestion-copy-compact strong,
+.suggestion-copy-compact small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.suggestion-copy-compact strong { font-size: 10px; }
+.suggestion-copy-compact small { color: rgba(255,255,255,.4); font-size: 8px; }
+.excel-table-scroll-compact {
+  max-height: 310px;
+  overflow: hidden;
+}
+.excel-table-scroll-compact .ant-table-body { scrollbar-gutter: stable; }
+.excel-json-preview-compact {
+  max-height: 280px;
+  min-height: 160px;
+}
+
+@media (max-width: 1280px) {
+  .excel-context-sticky {
+    grid-template-columns: minmax(190px, .8fr) minmax(330px, 1fr);
+  }
+  .excel-context-actions { grid-column: 1 / -1; justify-content: flex-end; }
+  .excel-shape-controls { align-items: stretch; flex-direction: column; }
+  .excel-shape-controls > .ant-segmented { min-width: 0; width: 100%; }
+  .excel-shape-options-inline { justify-content: stretch; }
+  .excel-suggestion-grid-compact { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 900px) {
+  .excel-mapper-v10 { padding: 10px 10px 28px; }
+  .excel-context-sticky { position: relative; grid-template-columns: 1fr; }
+  .excel-context-actions { grid-column: auto; justify-content: flex-start; flex-wrap: wrap; }
+  .excel-context-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .excel-sheet-select { flex: 1 1 170px; }
+  .excel-mapping-toolbar { align-items: stretch; flex-direction: column; }
+  .excel-mapping-filters { justify-content: flex-start; flex-wrap: wrap; }
+  .excel-mapping-filters .ant-input-affix-wrapper { width: 100%; }
+  .mapping-grid-header.mapping-grid-v10 { display: none; }
+  .mapping-grid-v10 {
+    grid-template-columns: 34px minmax(0, 1fr) minmax(140px, .8fr);
+  }
+  .mapping-row-v10 > :nth-child(3) { grid-column: 2 / -1; }
+  .mapping-row-v10 > :nth-child(4) { grid-column: 2 / -1; }
+  .excel-mapping-footer { align-items: stretch; flex-direction: column; }
+  .excel-mapping-footer .mapping-path-help { max-width: 100%; white-space: normal; }
+  .excel-component-save-inline { justify-content: flex-start; flex-wrap: wrap; }
+  .excel-component-save-inline > span { flex-basis: 100%; }
+  .excel-component-save-inline .ant-input { flex: 1 1 200px; width: auto; }
+  .excel-suggestion-grid-compact { grid-template-columns: 1fr; }
+}
+
+/* V11 — split Excel workspace with persistent JSON preview */
+.excel-mapper-v11 {
+  max-width: 1760px;
+  height: 100%;
+  min-height: 0;
+  padding: 12px 14px 14px;
+  overflow: hidden;
+  grid-template-rows: auto minmax(0, 1fr);
+  align-content: stretch;
+}
+.excel-mapper-v11 .excel-context-sticky {
+  position: relative;
+  top: auto;
+  box-shadow: none;
+}
+.excel-split-workspace {
+  min-width: 0;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 12px;
+  overflow: hidden;
+}
+.excel-control-column {
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-right: 3px;
+  scrollbar-gutter: stable;
+}
+.excel-control-column-heading {
+  min-width: 0;
+  min-height: 45px;
+  padding: 4px 3px 6px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.excel-control-column-heading > div:first-child { min-width: 0; }
+.excel-control-column-heading .ant-typography { margin: 0 !important; }
+.excel-control-column-heading .ant-typography-secondary {
+  display: block;
+  max-width: 620px;
+  font-size: 10px;
+  line-height: 1.4;
+}
+.excel-panel-actions {
+  flex: 0 0 auto;
+  display: flex;
+  gap: 6px;
+}
+.excel-work-panels {
+  min-width: 0;
+  border: 1px solid rgba(255,255,255,.075) !important;
+  border-radius: 12px !important;
+  overflow: hidden;
+  background: rgba(255,255,255,.016);
+}
+.excel-work-panels > .ant-collapse-item {
+  border-bottom-color: rgba(255,255,255,.065) !important;
+}
+.excel-work-panels > .ant-collapse-item:last-child { border-bottom: 0 !important; }
+.excel-work-panels .ant-collapse-header {
+  min-height: 50px;
+  padding: 9px 11px !important;
+  align-items: center !important;
+  background: rgba(255,255,255,.012);
+}
+.excel-work-panels .ant-collapse-item-active > .ant-collapse-header {
+  background: rgba(124,140,255,.028);
+}
+.excel-work-panels .ant-collapse-content-box {
+  padding: 8px 10px 11px !important;
+}
+.excel-shape-controls-split {
+  display: grid;
+  gap: 9px;
+  align-items: stretch;
+}
+.excel-shape-controls-split > .ant-segmented {
+  width: 100%;
+  min-width: 0;
+}
+.excel-shape-controls-split .ant-segmented-item-label {
+  padding-inline: 7px;
+  font-size: 10px;
+}
+.excel-shape-options-split {
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 7px;
+}
+.excel-shape-options-split label {
+  min-width: 0;
+  max-width: none;
+}
+.excel-mapping-panel-content {
+  min-width: 0;
+  display: grid;
+  gap: 7px;
+}
+.excel-mapping-toolbar-split {
+  display: block;
+}
+.excel-mapping-toolbar-split .excel-mapping-filters {
+  width: 100%;
+  justify-content: flex-start;
+}
+.excel-mapping-toolbar-split .excel-mapping-filters .ant-input-affix-wrapper {
+  flex: 1 1 260px;
+  width: auto;
+}
+.mapping-grid-v11 {
+  grid-template-columns: 34px minmax(135px, .72fr) minmax(180px, 1.1fr) minmax(145px, .72fr);
+  gap: 6px;
+}
+.mapping-grid-header.mapping-grid-v11 {
+  padding: 3px 8px 4px;
+  font-size: 8px;
+}
+.mapping-list-v11 {
+  max-height: clamp(250px, 38vh, 430px);
+  min-height: 170px;
+  padding-right: 3px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  display: grid;
+  align-content: start;
+  gap: 4px;
+  scrollbar-gutter: stable;
+}
+.mapping-row-v11 {
+  min-width: 0;
+  min-height: 42px;
+  padding: 4px 6px;
+  border-radius: 8px;
+}
+.mapping-row-v11 > * { min-width: 0; }
+.mapping-row-v11 .ant-input,
+.mapping-row-v11 .ant-select-selector { font-size: 10px !important; }
+.mapping-row-v11 .ant-select { width: 100%; }
+.mapping-row-v11 .mapping-source-compact {
+  gap: 5px;
+}
+.mapping-row-v11 .mapping-source-compact strong { font-size: 9px; }
+.mapping-row-v11 .mapping-source-compact span {
+  max-width: 92px;
+  padding-inline: 4px;
+  font-size: 7px;
+}
+.excel-mapping-footer-split {
+  align-items: flex-start;
+  flex-direction: column;
+  gap: 7px;
+}
+.excel-mapping-footer-split .mapping-path-help {
+  max-width: 100%;
+  white-space: normal;
+  font-size: 9px;
+  line-height: 1.35;
+}
+.excel-mapping-footer-split .excel-component-save-inline {
+  width: 100%;
+  justify-content: flex-start;
+}
+.excel-mapping-footer-split .excel-component-save-inline .ant-input {
+  flex: 1 1 180px;
+  width: auto;
+}
+.excel-suggestion-grid-split {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+}
+.excel-table-scroll-split {
+  max-height: 270px;
+  overflow: hidden;
+}
+.excel-json-live-panel {
+  min-width: 0;
+  min-height: 0;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  overflow: hidden;
+  border: 1px solid rgba(255,255,255,.085);
+  border-radius: 12px;
+  background: rgba(5, 12, 23, .46);
+}
+.excel-json-live-header {
+  min-width: 0;
+  padding: 11px 13px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  border-bottom: 1px solid rgba(255,255,255,.065);
+  background: rgba(10,17,30,.9);
+}
+.excel-json-live-header > div:first-child { min-width: 0; }
+.excel-json-live-header .ant-typography { margin: 0 !important; }
+.excel-json-live-header .ant-typography-secondary {
+  display: block;
+  margin-top: 2px !important;
+  font-size: 9px;
+  line-height: 1.4;
+}
+.excel-json-live-kicker {
+  display: block;
+  margin-bottom: 3px;
+  color: rgba(255,255,255,.4);
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: .09em;
+  text-transform: uppercase;
+}
+.excel-json-live-meta {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.excel-json-live-code {
+  min-width: 0;
+  min-height: 0;
+  max-height: none;
+  margin: 0;
+  padding: 14px 16px 18px;
+  overflow: auto;
+  border: 0;
+  border-radius: 0;
+  background: rgba(2, 7, 15, .72);
+  color: #cfd7ff;
+  font-size: 10px;
+  line-height: 1.52;
+  scrollbar-gutter: stable;
+  white-space: pre;
+}
+.excel-json-live-footer {
+  min-width: 0;
+  min-height: 36px;
+  padding: 7px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  border-top: 1px solid rgba(255,255,255,.06);
+  color: rgba(255,255,255,.38);
+  font-size: 8px;
+}
+.excel-json-live-footer span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (max-width: 1380px) {
+  .excel-split-workspace { grid-template-columns: minmax(0, 1.05fr) minmax(0, .95fr); }
+  .mapping-grid-v11 {
+    grid-template-columns: 32px minmax(115px, .65fr) minmax(155px, 1fr) minmax(130px, .7fr);
+  }
+  .mapping-row-v11 .mapping-source-compact {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .mapping-row-v11 .mapping-source-compact span { max-width: 100%; }
+}
+@media (max-width: 1120px) {
+  .excel-mapper-v11 {
+    height: auto;
+    min-height: 760px;
+    overflow-y: auto;
+  }
+  .excel-split-workspace {
+    overflow: visible;
+    grid-template-columns: 1fr;
+  }
+  .excel-control-column { overflow: visible; }
+  .excel-json-live-panel {
+    min-height: 520px;
+  }
+  .mapping-grid-v11 {
+    grid-template-columns: 34px minmax(130px, .72fr) minmax(180px, 1.1fr) minmax(145px, .72fr);
+  }
+}
+@media (max-width: 760px) {
+  .excel-control-column-heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .excel-panel-actions { width: 100%; }
+  .excel-panel-actions .ant-btn { flex: 1; }
+  .excel-shape-options-split { grid-template-columns: 1fr; }
+  .mapping-grid-header.mapping-grid-v11 { display: none; }
+  .mapping-grid-v11 {
+    grid-template-columns: 30px minmax(0, 1fr);
+  }
+  .mapping-row-v11 > :nth-child(3),
+  .mapping-row-v11 > :nth-child(4) { grid-column: 2 / -1; }
+  .excel-suggestion-grid-split { grid-template-columns: 1fr; }
+  .excel-json-live-header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .excel-json-live-meta { justify-content: space-between; }
+}

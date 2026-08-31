@@ -17,6 +17,7 @@ import {
   CodeOutlined,
   ExperimentOutlined,
   FileAddOutlined,
+  FileExcelOutlined,
   FolderOpenOutlined,
   ImportOutlined,
   LinkOutlined,
@@ -37,6 +38,7 @@ import { ReferencesView } from './components/ReferencesView'
 import { StudioHeader } from './components/StudioHeader'
 import { Toolbox } from './components/Toolbox'
 import { VisualBuilder } from './components/VisualBuilder'
+import { ExcelMapper } from './components/ExcelMapper'
 import { useJsonHistory } from './hooks/useJsonHistory'
 import type { JsonObject, JsonPath, JsonType, JsonValue } from './types/json'
 import {
@@ -52,6 +54,7 @@ import {
   setAtPath,
 } from './utils/json'
 import { I18nProvider, useI18n } from './i18n'
+import { parseExcelFile, type ExcelWorkbookData } from './utils/excel'
 import './styles.css'
 
 const emptyDocument: JsonValue = {}
@@ -65,7 +68,7 @@ const emptyAnalysis: JsonAnalysisResult = {
   maxDepth: 0,
 }
 
-type WorkflowPhase = 'start' | 'sample' | 'analysis' | 'build'
+type WorkflowPhase = 'start' | 'sample' | 'analysis' | 'excel' | 'build'
 
 const propertyNameFromTool = (name: string) => {
   const words = name.replace(/[^a-zA-Z0-9]+/g, ' ').trim().split(/\s+/).filter(Boolean)
@@ -129,6 +132,8 @@ function Studio() {
   const [sampleError, setSampleError] = useState<string | null>(null)
   const [analysis, setAnalysis] = useState<JsonAnalysisResult>(emptyAnalysis)
   const [analysisReady, setAnalysisReady] = useState(false)
+  const [excelWorkbook, setExcelWorkbook] = useState<ExcelWorkbookData | null>(null)
+  const [prepareSource, setPrepareSource] = useState<'sample' | 'excel' | null>(null)
   const [guidedComponents, setGuidedComponents] = useState<GuidedComponent[]>(() => {
     if (typeof window === 'undefined') return []
     try {
@@ -181,6 +186,7 @@ function Studio() {
     setAnalysisReady(false)
     setAnalysis(emptyAnalysis)
     setBuilderNeedsSampleShell(true)
+    setPrepareSource('sample')
 
     if (!text.trim()) {
       setSampleValue(emptyDocument)
@@ -210,6 +216,7 @@ function Studio() {
     setAnalysis(result)
     setAnalysisReady(true)
     setBuilderNeedsSampleShell(true)
+    setPrepareSource('sample')
     setPhase('analysis')
     messageApi.success(t('analysis.detectedComponents', { count: result.structures.filter(item => !item.contexts.includes('Root')).length }))
   }
@@ -240,10 +247,23 @@ function Studio() {
       setAnalysis(emptyAnalysis)
       setAnalysisReady(false)
       setBuilderNeedsSampleShell(true)
+      setPrepareSource('sample')
       setPhase('sample')
       messageApi.success(t('sample.loaded', { file: file.name }))
     } catch (error) {
       messageApi.error(error instanceof Error ? error.message : t('builder.importFailed'))
+    }
+  }
+
+  const importExcel = async (file: File) => {
+    try {
+      const workbook = await parseExcelFile(file)
+      setExcelWorkbook(workbook)
+      setPrepareSource('excel')
+      setPhase('excel')
+      messageApi.success(t('excel.loaded', { file: file.name, sheets: workbook.sheets.length }))
+    } catch (error) {
+      messageApi.error(error instanceof Error ? error.message : t('excel.importFailed'))
     }
   }
 
@@ -354,6 +374,10 @@ function Studio() {
       setPhase('analysis')
       return
     }
+    if (nextPhase === 'excel') {
+      setPhase(excelWorkbook ? 'excel' : 'start')
+      return
+    }
     enterBuildMode()
   }
 
@@ -417,6 +441,8 @@ function Studio() {
       <StudioHeader
         phase={phase}
         analysisReady={analysisReady}
+        excelReady={!!excelWorkbook}
+        prepareSource={prepareSource}
         value={history.value}
         canUndo={history.canUndo}
         canRedo={history.canRedo}
@@ -425,6 +451,7 @@ function Studio() {
         onRedo={history.redo}
         onImportBuilder={importBuilder}
         onImportSample={importSample}
+        onImportExcel={importExcel}
       />
 
       {phase === 'start' && (
@@ -453,7 +480,14 @@ function Studio() {
                 <div className="start-option-icon"><ExperimentOutlined /></div>
                 <Typography.Title level={4}>{t('start.analyzeSample')}</Typography.Title>
                 <Typography.Paragraph type="secondary">{t('start.analyzeSampleDescription')}</Typography.Paragraph>
-                <Button onClick={() => setPhase('sample')}>{t('start.goToSample')}</Button>
+                <Button onClick={() => { setPrepareSource('sample'); setPhase('sample') }}>{t('start.goToSample')}</Button>
+              </Card>
+
+              <Card className="start-option-card excel-start-card">
+                <div className="start-option-icon excel-start-icon"><FileExcelOutlined /></div>
+                <Typography.Title level={4}>{t('start.excel')}</Typography.Title>
+                <Typography.Paragraph type="secondary">{t('start.excelDescription')}</Typography.Paragraph>
+                <Button onClick={() => document.getElementById('excel-import')?.click()}>{t('start.excelButton')}</Button>
               </Card>
 
               <Card className="start-option-card">
@@ -545,6 +579,32 @@ function Studio() {
             <div className="analysis-results-shell">
               <AnalysisResults result={analysis} onBuild={buildFromAnalysis} />
             </div>
+          </section>
+        </main>
+      )}
+
+      {phase === 'excel' && excelWorkbook && (
+        <main className="single-step-workspace excel-workspace">
+          <section className="panel flow-step-panel excel-flow-panel">
+            <ExcelMapper
+              workbook={excelWorkbook}
+              onLoadAnother={() => document.getElementById('excel-import')?.click()}
+              onCreateComponent={component => {
+                setGuidedComponents(current => [...current, component])
+                messageApi.success(t('guided.created', { name: component.name }))
+              }}
+              onGenerate={value => {
+                history.replace(value)
+                setBuilderText(JSON.stringify(value, null, 2))
+                setBuilderError(null)
+                setSelectedPath([])
+                setInspectorOpen(false)
+                setWorkspaceView('visual')
+                setBuilderNeedsSampleShell(false)
+                setPhase('build')
+                messageApi.success(t('excel.generated'))
+              }}
+            />
           </section>
         </main>
       )}
@@ -647,6 +707,7 @@ function Studio() {
           </span>
         )}
         {phase === 'analysis' && <span className="status-ok">● {t('analysis.ready')}</span>}
+        {phase === 'excel' && <span className="status-ok">● {t('excel.mappingReady')}</span>}
         {phase === 'build' && (
           <span className={builderError ? 'status-error' : 'status-ok'}>
             ● {builderError ? t('builder.invalidJson') : t('builder.validJson')}
