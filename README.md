@@ -59,3 +59,14 @@ npm run build
 ```
 
 Output: `dist`
+
+## 0.14.1 - TypeScript build hotfix
+
+Fixes strict TypeScript errors in `src/utils/excelTemplate.ts` that prevented Vercel builds:
+
+- Explicitly types intermediate JSON path values instead of relying on recursive inference.
+- Narrows `.find()` results before assigning them to `JsonValue`.
+- Makes the JSON-object type guard accept unknown/undefined inputs safely.
+- Ensures selector-created objects are typed as `JsonObject` before pushing them into arrays.
+
+No UI or mapping behavior is intentionally changed by this hotfix.

@@ -49,7 +49,7 @@ const pathLabel = (path: JsonPath) => {
   return output
 }
 
-const isObject = (value: JsonValue): value is JsonObject => value !== null && typeof value === 'object' && !Array.isArray(value)
+const isObject = (value: unknown): value is JsonObject => value !== null && typeof value === 'object' && !Array.isArray(value)
 const isBlank = (value: JsonValue | undefined) => value === null || value === undefined || (typeof value === 'string' && value.trim() === '')
 const serialized = (value: JsonValue) => JSON.stringify(value)
 
@@ -145,11 +145,13 @@ export const getTemplatePathValue = (root: JsonObject, path: string): JsonValue 
   for (const raw of splitTemplatePath(path)) {
     const segment = parseSegment(raw)
     if (!isObject(cursor)) return undefined
-    const next = cursor[segment.key]
+    const next: JsonValue | undefined = cursor[segment.key]
+    if (next === undefined) return undefined
     if (segment.selectorKey) {
       if (!Array.isArray(next)) return undefined
-      cursor = next.find(item => isObject(item) && String(item[segment.selectorKey!]) === segment.selectorValue)
-      if (cursor === undefined) return undefined
+      const foundItem: JsonValue | undefined = next.find(item => isObject(item) && String(item[segment.selectorKey!]) === segment.selectorValue)
+      if (!isObject(foundItem)) return undefined
+      cursor = foundItem
     } else cursor = next
   }
   return cursor
@@ -168,8 +170,11 @@ const setTemplatePathValue = (root: JsonObject, path: string, value: JsonValue) 
         array = []
         cursor[segment.key] = array
       }
-      let item = array.find(candidate => isObject(candidate) && String(candidate[segment.selectorKey!]) === segment.selectorValue)
-      if (!isObject(item)) {
+      const matchedItem = array.find(candidate => isObject(candidate) && String(candidate[segment.selectorKey!]) === segment.selectorValue)
+      let item: JsonObject
+      if (isObject(matchedItem)) {
+        item = matchedItem
+      } else {
         item = { [segment.selectorKey]: segment.selectorValue ?? '' }
         array.push(item)
       }
