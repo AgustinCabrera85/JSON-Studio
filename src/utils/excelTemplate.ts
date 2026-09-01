@@ -24,6 +24,8 @@ export interface TemplateRepeatTarget {
 export type TemplatePopulateMode = 'replace' | 'append'
 export type TemplateFieldMode = 'preserve' | 'map'
 
+export type TemplateFieldTransform = 'wrap-array'
+
 export interface TemplateFieldMapping {
   targetPath: string
   label: string
@@ -35,6 +37,7 @@ export interface TemplateFieldMapping {
   confidence: number
   constant: boolean
   guideValue: JsonValue
+  transform?: TemplateFieldTransform
 }
 
 const pathLabel = (path: JsonPath) => {
@@ -358,7 +361,10 @@ export const buildTemplateItem = (target: TemplateRepeatTarget, row: JsonValue[]
   const result = cloneJson(target.prototype)
   mappings.forEach(mapping => {
     if (mapping.mode !== 'map' || mapping.sourceColumnIndex === undefined) return
-    const converted = convertExcelValue(row[mapping.sourceColumnIndex] ?? null, mapping.jsonType, mapping.semanticType)
+    const sourceValue = row[mapping.sourceColumnIndex] ?? null
+    const converted = mapping.transform === 'wrap-array'
+      ? (sourceValue === null || sourceValue === undefined || sourceValue === '' ? [] : [cloneJson(sourceValue)])
+      : convertExcelValue(sourceValue, mapping.jsonType, mapping.semanticType)
     setTemplatePathValue(result, mapping.targetPath, converted)
   })
   return result

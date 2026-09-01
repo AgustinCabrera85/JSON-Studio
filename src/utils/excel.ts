@@ -12,6 +12,14 @@ export interface ExcelColumnProfile {
   sampleValues: JsonValue[]
 }
 
+export interface ExcelFormulaCell {
+  rowNumber: number
+  columnIndex: number
+  address: string
+  formula: string
+  cachedValue: JsonValue
+}
+
 export interface ExcelSheetData {
   name: string
   headers: string[]
@@ -22,6 +30,8 @@ export interface ExcelSheetData {
   headerRowNumber: number
   /** 1-based worksheet row number for every row in `rows`. */
   rowNumbers: number[]
+  /** Formula cells preserved from the workbook so JSON-generation logic can be discovered. */
+  formulaCells: ExcelFormulaCell[]
 }
 
 export interface ExcelWorkbookData {
@@ -133,9 +143,9 @@ const detectHeaderRowIndex = (matrix: unknown[][]) => {
   return bestIndex
 }
 
-const profileSheet = (name: string, matrix: unknown[][]): ExcelSheetData => {
+const profileSheet = (name: string, matrix: unknown[][], formulaCells: ExcelFormulaCell[] = []): ExcelSheetData => {
   const hasAnyData = matrix.some(row => row.some(cell => !isBlank(cell)))
-  if (!hasAnyData) return { name, headers: [], rows: [], profiles: [], rowCount: 0, headerRowNumber: 1, rowNumbers: [] }
+  if (!hasAnyData) return { name, headers: [], rows: [], profiles: [], rowCount: 0, headerRowNumber: 1, rowNumbers: [], formulaCells }
 
   const headerIndex = detectHeaderRowIndex(matrix)
   const headerRow = matrix[headerIndex] ?? []
@@ -162,13 +172,13 @@ const profileSheet = (name: string, matrix: unknown[][]): ExcelSheetData => {
     }
   })
 
-  return { name, headers, rows, profiles, rowCount: rows.length, headerRowNumber: headerIndex + 1, rowNumbers }
+  return { name, headers, rows, profiles, rowCount: rows.length, headerRowNumber: headerIndex + 1, rowNumbers, formulaCells }
 }
 
 export const parseExcelFile = async (file: File): Promise<ExcelWorkbookData> => {
   const XLSX = await import('xlsx')
   const buffer = await file.arrayBuffer()
-  const workbook = XLSX.read(buffer, { type: 'array', cellDates: true, dense: true })
+  const workbook = XLSX.read(buffer, { type: 'array', cellDates: true, cellFormula: true, dense: false })
   const sheets = workbook.SheetNames.map(name => {
     const worksheet = workbook.Sheets[name]
     const matrix = XLSX.utils.sheet_to_json<unknown[]>(worksheet, {
@@ -177,7 +187,28 @@ export const parseExcelFile = async (file: File): Promise<ExcelWorkbookData> => 
       defval: null,
       blankrows: false,
     })
-    return profileSheet(name, matrix)
+
+    const formulaCells: ExcelFormulaCell[] = []
+    const ref = worksheet['!ref']
+    if (ref) {
+      const range = XLSX.utils.decode_range(ref)
+      for (let row = range.s.r; row <= range.e.r; row += 1) {
+        for (let column = range.s.c; column <= range.e.c; column += 1) {
+          const address = XLSX.utils.encode_cell({ r: row, c: column })
+          const cell = worksheet[address] as { f?: string; v?: unknown; w?: string; t?: string } | undefined
+          if (!cell || typeof cell.f !== 'string' || !cell.f.trim()) continue
+          formulaCells.push({
+            rowNumber: row + 1,
+            columnIndex: column,
+            address,
+            formula: cell.f,
+            cachedValue: cell.t === 'e' && cell.w ? cell.w : normalizeCell(cell.v),
+          })
+        }
+      }
+    }
+
+    return profileSheet(name, matrix, formulaCells)
   }).filter(sheet => sheet.headers.length > 0)
 
   if (sheets.length === 0) throw new Error('No tabular data was found in the workbook')

@@ -5,6 +5,7 @@ import {
   FileExcelOutlined,
   SaveOutlined,
   SearchOutlined,
+  FunctionOutlined,
 } from '@ant-design/icons'
 import {
   Button,
@@ -16,6 +17,7 @@ import {
   Tag,
   Tooltip,
   Typography,
+  Alert,
 } from 'antd'
 import { useEffect, useMemo, useState } from 'react'
 import { useI18n } from '../i18n'
@@ -30,6 +32,13 @@ import {
   type TemplateFieldMapping,
   type TemplatePopulateMode,
 } from '../utils/excelTemplate'
+import {
+  discoverFormulaGeneratedJson,
+  generatedJsonArrayFromCandidate,
+  learnedFieldForTemplatePath,
+  type FormulaJsonCandidate,
+} from '../utils/excelFormula'
+import { cloneJson, getAtPath, setAtPath } from '../utils/json'
 
 interface TemplateExcelMapperProps {
   workbook: ExcelWorkbookData
@@ -69,6 +78,21 @@ const distinctColumnValues = (sheet: ExcelSheetData, columnIndex?: number) => {
 
 const valueEquals = (left: JsonValue, right: JsonValue) => JSON.stringify(left) === JSON.stringify(right)
 
+const generatedIntoTemplate = (template: JsonValue, target: ReturnType<typeof findTemplateRepeatTargets>[number], candidate: FormulaJsonCandidate, populateMode: TemplatePopulateMode, allowedRows: Set<number>) => {
+  const generated = generatedJsonArrayFromCandidate({
+    ...candidate,
+    generatedRows: candidate.generatedRows.filter(row => allowedRows.has(row.rowNumber)),
+  })
+  if (target.kind === 'root-object') return generated
+  const existing = getAtPath(template, target.path)
+  const nextItems = populateMode === 'append' && Array.isArray(existing)
+    ? [...existing.map(item => cloneJson(item)), ...generated.map(item => cloneJson(item))]
+    : generated
+  return setAtPath(template, target.path, nextItems)
+}
+
+const formulaKindColor = (kind: string) => kind === 'direct' ? 'green' : kind === 'derived' ? 'blue' : kind === 'constant' ? 'default' : 'orange'
+
 export const TemplateExcelMapper = ({ workbook, template, onGenerate, onCreateComponent, onLoadAnother }: TemplateExcelMapperProps) => {
   const { t } = useI18n()
   const [sheetName, setSheetName] = useState(workbook.sheets[0]?.name ?? '')
@@ -89,6 +113,11 @@ export const TemplateExcelMapper = ({ workbook, template, onGenerate, onCreateCo
   const [filterColumnIndex, setFilterColumnIndex] = useState<number | undefined>(suggestedFilter?.index)
   const [filterValue, setFilterValue] = useState<JsonValue>(true)
 
+  const formulaDiscovery = useMemo(() => discoverFormulaGeneratedJson(sheet), [sheet])
+  const formulaCandidate = formulaDiscovery.preferred
+  const [formulaDetailsOpen, setFormulaDetailsOpen] = useState(false)
+  const [formulaAppliedCount, setFormulaAppliedCount] = useState<number | null>(null)
+
   useEffect(() => { setSheetName(workbook.sheets[0]?.name ?? '') }, [workbook.fileName])
 
   useEffect(() => {
@@ -107,6 +136,8 @@ export const TemplateExcelMapper = ({ workbook, template, onGenerate, onCreateCo
     setFilterEnabled(!!suggestion)
     setFilterColumnIndex(suggestion?.index)
     setFilterValue(true)
+    setFormulaDetailsOpen(false)
+    setFormulaAppliedCount(null)
   }, [sheet.name, workbook.fileName, target?.id])
 
   const filteredSheet = useMemo<ExcelSheetData>(() => {
@@ -195,6 +226,31 @@ export const TemplateExcelMapper = ({ workbook, template, onGenerate, onCreateCo
     })
   }
 
+
+  const applyFormulaLearnedMapping = () => {
+    if (!formulaCandidate) return
+    let applied = 0
+    setMappings(current => current.map(mapping => {
+      const learned = learnedFieldForTemplatePath(mapping.targetPath, formulaCandidate.learnedFields)
+      if (!learned || learned.sourceColumnIndex === undefined || learned.kind === 'constant' || learned.kind === 'unresolved') return mapping
+      const profile = sheet.profiles[learned.sourceColumnIndex]
+      if (!profile) return mapping
+      applied += 1
+      return {
+        ...mapping,
+        mode: 'map',
+        sourceColumnIndex: learned.sourceColumnIndex,
+        sourceHeader: profile.header,
+        semanticType: profile.inferredType,
+        confidence: learned.confidence,
+        constant: false,
+        transform: learned.transform,
+      }
+    }))
+    setFormulaAppliedCount(applied)
+    setOpenPanels(current => current.includes('mapping') ? current : [...current, 'mapping'])
+  }
+
   const saveComponent = () => {
     if (!target) return
     onCreateComponent({
@@ -241,12 +297,80 @@ export const TemplateExcelMapper = ({ workbook, template, onGenerate, onCreateCo
         </div>
       </div>
 
+      <div className="template-preflight-stack">
       <div className="template-mapping-explainer">
         <div><span>1</span><strong>{t('excel.mappingStep1Title')}</strong><small>{t('excel.mappingStep1Description')}</small></div>
         <ArrowRightOutlined />
         <div><span>2</span><strong>{t('excel.mappingStep2Title')}</strong><small>{t('excel.mappingStep2Description')}</small></div>
         <ArrowRightOutlined />
         <div><span>3</span><strong>{t('excel.mappingStep3Title')}</strong><small>{t('excel.mappingStep3Description')}</small></div>
+      </div>
+
+      {formulaCandidate && (
+        <section className="formula-discovery-card">
+          <div className="formula-discovery-summary">
+            <div className="formula-discovery-icon"><FunctionOutlined /></div>
+            <div className="formula-discovery-copy">
+              <div className="formula-discovery-titleline">
+                <Typography.Title level={5}>{t('excel.formulaDetectedTitle')}</Typography.Title>
+                <Tag color="green">{t('excel.formulaRecommended')}</Tag>
+                <Tag>{Math.round(formulaCandidate.confidence * 100)}%</Tag>
+              </div>
+              <Typography.Text type="secondary">{t('excel.formulaDetectedDescription')}</Typography.Text>
+              <div className="formula-discovery-metrics">
+                <span><small>{t('excel.formulaColumn')}</small><strong>{formulaCandidate.header}</strong></span>
+                <span><small>{t('excel.formulaOutputs')}</small><strong>{formulaCandidate.generatedCount}</strong></span>
+                <span><small>{t('excel.formulaParsed')}</small><strong>{formulaCandidate.parseableCount}</strong></span>
+                <span><small>{t('excel.formulaLogic')}</small><strong>{formulaCandidate.learnedFields.filter(field => field.kind === 'direct' || field.kind === 'derived').length}/{formulaCandidate.learnedFields.length}</strong></span>
+              </div>
+            </div>
+            <div className="formula-discovery-actions">
+              <Button type="primary" onClick={applyFormulaLearnedMapping}>{t('excel.formulaApplyMapping')}</Button>
+              <Button
+                disabled={formulaCandidate.parseableCount === 0}
+                onClick={() => onGenerate(generatedIntoTemplate(template, target, formulaCandidate, populateMode, new Set(filteredSheet.rowNumbers)))}
+              >
+                {t('excel.formulaUseOutput')}
+              </Button>
+              <Button type="text" onClick={() => setFormulaDetailsOpen(value => !value)}>{formulaDetailsOpen ? t('excel.formulaHide') : t('excel.formulaInspect')}</Button>
+            </div>
+          </div>
+          {formulaAppliedCount !== null && <Alert type="success" showIcon message={t('excel.formulaApplied', { count: formulaAppliedCount })} />}
+          {formulaCandidate.errorCount > 0 && <Alert type="warning" showIcon message={t('excel.formulaPartialWarning', { count: formulaCandidate.errorCount })} />}
+          {formulaDetailsOpen && (
+            <div className="formula-logic-details">
+              <div className="formula-logic-note">{t('excel.formulaMappingModeHint')}</div>
+              {formulaCandidate.externalLookups.length > 0 && (
+                <div className="formula-external-note">{t('excel.formulaExternalLookup', { sources: formulaCandidate.externalLookups.join(', ') })}</div>
+              )}
+              <div className="formula-logic-head">
+                <span>{t('excel.formulaTargetField')}</span>
+                <span>{t('excel.formulaSource')}</span>
+                <span>{t('excel.formulaLogic')}</span>
+                <span>{t('excel.formulaConfidence')}</span>
+              </div>
+              <div className="formula-logic-scroll">
+                {formulaCandidate.learnedFields.map(field => (
+                  <div className="formula-logic-row" key={field.targetPath}>
+                    <div><strong>{field.label}</strong><code>{field.targetPath}</code></div>
+                    <div>
+                      <strong>{field.sourceHeader ?? (field.kind === 'constant' ? printable(field.sampleValue) : '—')}</strong>
+                      {field.helperHeader && field.sourceHeader !== field.helperHeader && <small>{t('excel.formulaHelper', { column: field.helperHeader })}</small>}
+                    </div>
+                    <div>
+                      <Tag color={formulaKindColor(field.kind)}>{t(`excel.formula${field.kind.charAt(0).toUpperCase()}${field.kind.slice(1)}`)}</Tag>
+                      <small>{field.explanation}</small>
+                      {field.dependencyHeaders.length > 0 && <small>{t('excel.formulaDependencies', { columns: field.dependencyHeaders.join(', ') })}</small>}
+                    </div>
+                    <strong>{Math.round(field.confidence * 100)}%</strong>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </section>
+      )}
+
       </div>
 
       <div className="excel-split-workspace template-split-v13">

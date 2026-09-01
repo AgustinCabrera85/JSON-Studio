@@ -1,21 +1,49 @@
-# Gerardo's awesome JSON Studio — V13
+# Gerardo's awesome JSON Studio — V14
 
-Web-first JSON builder and mapper for Vercel.
+Web-first JSON builder, analyzer and data mapper designed for Vercel.
 
-## V13 — clearer JSON guide + Excel mapping
+## V14 — Formula Mapping Discovery
 
-Template-guided Excel mapping is now **target-first**:
+V14 can learn JSON-generation logic that already exists inside an Excel workbook.
 
-- JSON target fields are the primary list (not all Excel columns).
-- Each target field can either **Preserve guide value** or map from one Excel column.
-- Unused Excel columns are ignored instead of being added to the JSON automatically.
-- Constant fields in the JSON guide are detected and preserved by default.
-- Repeated object arrays with identity keys (for example `attributes[attributeKey="cardAddresses"]`) are exposed as semantic target paths.
-- Auto-mapping combines header similarity with value overlap. This can infer cases such as a `Simplex` Excel column feeding JSON `pid` when the values match existing guide examples.
-- Excel header rows are detected automatically instead of assuming row 1. This is important for workbooks that contain title / metadata rows above the actual table.
-- Optional row filtering is available before population. Boolean columns such as `Add to Module.json` are suggested automatically.
-- The preview defaults to **one generated item**, making it easy to understand what one Excel row becomes. A full JSON preview is still available.
-- The right-side preview remains persistent while mapping.
+When a workbook contains formulas that assemble JSON (or JSON-like text), JSON Studio now:
+
+- detects likely formula-generated JSON output columns;
+- reads the workbook formulas instead of treating every Excel column as an unrelated field;
+- traces A1 references and ranges through helper formula columns;
+- recognizes lookup/derived logic such as `XLOOKUP`, `VLOOKUP`, `INDEX` and `MATCH`;
+- compares generated JSON values across rows with workbook columns to infer source relationships;
+- classifies learned JSON fields as **Direct**, **Derived**, **Constant** or **Unresolved**;
+- understands semantic paths inside named arrays, e.g. `attributes[attributeKey="cardPower"].attributesValue`;
+- normalizes equivalent rule representations so formula-generated named rule arrays can teach a JSON guide that stores rules as objects;
+- can apply the learned mapping to the current JSON guide while preserving its structure and unmapped constants;
+- can alternatively use the workbook's generated JSON output directly when the detected output is usable;
+- reports partial/invalid generated rows instead of silently treating malformed JSON-like text as valid JSON;
+- keeps the formula logic inspectable so users can see the helper columns and raw dependencies behind a generated field.
+
+### Two formula-aware actions
+
+**Apply learned mapping (recommended)**
+
+Keeps the JSON guide as the source of truth for structure. Excel formulas are used to learn which workbook data populates each target field. This is the safer mode when the workbook's generated JSON has legacy syntax differences or a different representation.
+
+**Use generated JSON**
+
+Uses the JSON objects already produced by the spreadsheet formula output. Only rows with a readable generated object are used, and the normal row filters still apply.
+
+## Existing capabilities
+
+- Guided JSON creation without a sample.
+- JSON sample analysis and reusable component discovery.
+- Visual component builder + raw Monaco JSON editor.
+- Drag & drop into the visual builder and JSON editor.
+- GUID/UUID reference discovery and aliases.
+- Excel / CSV import and column-to-JSON mapping.
+- Template-guided Excel population with Replace / Append modes.
+- Automatic Excel header-row detection and boolean row filters.
+- Persistent 50/50 Excel mapping + JSON preview workspace.
+- English UI by default, with Spanish toggle.
+- Browser-local processing; no backend is required for the core workflow.
 
 ## Install
 
