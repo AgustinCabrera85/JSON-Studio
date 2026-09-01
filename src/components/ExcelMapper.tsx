@@ -23,6 +23,7 @@ import {
 } from 'antd'
 import { useEffect, useMemo, useState } from 'react'
 import { useI18n } from '../i18n'
+import { TemplateExcelMapper } from './TemplateExcelMapper'
 import type { GuidedComponent } from '../types/toolbox'
 import type { JsonType, JsonValue } from '../types/json'
 import {
@@ -37,6 +38,7 @@ import {
 
 interface ExcelMapperProps {
   workbook: ExcelWorkbookData
+  template?: JsonValue | null
   onGenerate: (value: JsonValue) => void
   onCreateComponent: (component: GuidedComponent) => void
   onLoadAnother: () => void
@@ -47,7 +49,7 @@ const typeOptions = (t: (key: string) => string) => (['string', 'number', 'boole
   label: t(`type.${type}`),
 }))
 
-export const ExcelMapper = ({ workbook, onGenerate, onCreateComponent, onLoadAnother }: ExcelMapperProps) => {
+const StandaloneExcelMapper = ({ workbook, onGenerate, onCreateComponent, onLoadAnother }: ExcelMapperProps) => {
   const { t } = useI18n()
   const [sheetName, setSheetName] = useState(workbook.sheets[0]?.name ?? '')
   const sheet = workbook.sheets.find(item => item.name === sheetName) ?? workbook.sheets[0]!
@@ -402,4 +404,20 @@ export const ExcelMapper = ({ workbook, onGenerate, onCreateComponent, onLoadAno
       </div>
     </div>
   )
+}
+
+
+export const ExcelMapper = (props: ExcelMapperProps) => {
+  if (props.template) {
+    return (
+      <TemplateExcelMapper
+        workbook={props.workbook}
+        template={props.template}
+        onGenerate={props.onGenerate}
+        onCreateComponent={props.onCreateComponent}
+        onLoadAnother={props.onLoadAnother}
+      />
+    )
+  }
+  return <StandaloneExcelMapper {...props} />
 }

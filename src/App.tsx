@@ -44,6 +44,7 @@ import type { JsonObject, JsonPath, JsonType, JsonValue } from './types/json'
 import {
   addObjectProperty,
   appendArrayItem,
+  cloneJson,
   defaultValueForType,
   deleteAtPath,
   detectType,
@@ -133,6 +134,7 @@ function Studio() {
   const [analysis, setAnalysis] = useState<JsonAnalysisResult>(emptyAnalysis)
   const [analysisReady, setAnalysisReady] = useState(false)
   const [excelWorkbook, setExcelWorkbook] = useState<ExcelWorkbookData | null>(null)
+  const [excelTemplate, setExcelTemplate] = useState<JsonValue | null>(null)
   const [prepareSource, setPrepareSource] = useState<'sample' | 'excel' | null>(null)
   const [guidedComponents, setGuidedComponents] = useState<GuidedComponent[]>(() => {
     if (typeof window === 'undefined') return []
@@ -259,9 +261,23 @@ function Studio() {
     try {
       const workbook = await parseExcelFile(file)
       setExcelWorkbook(workbook)
+      setExcelTemplate(null)
       setPrepareSource('excel')
       setPhase('excel')
       messageApi.success(t('excel.loaded', { file: file.name, sheets: workbook.sheets.length }))
+    } catch (error) {
+      messageApi.error(error instanceof Error ? error.message : t('excel.importFailed'))
+    }
+  }
+
+  const importExcelForTemplate = async (file: File) => {
+    try {
+      const workbook = await parseExcelFile(file)
+      setExcelWorkbook(workbook)
+      setExcelTemplate(cloneJson(history.value))
+      setPrepareSource('excel')
+      setPhase('excel')
+      messageApi.success(t('excel.templateLoaded', { file: file.name, sheets: workbook.sheets.length }))
     } catch (error) {
       messageApi.error(error instanceof Error ? error.message : t('excel.importFailed'))
     }
@@ -586,9 +602,23 @@ function Studio() {
       {phase === 'excel' && excelWorkbook && (
         <main className="single-step-workspace excel-workspace">
           <section className="panel flow-step-panel excel-flow-panel">
+            {excelTemplate && (
+              <input
+                id="excel-template-reimport"
+                type="file"
+                accept=".xlsx,.xls,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv"
+                hidden
+                onChange={event => {
+                  const file = event.target.files?.[0]
+                  if (file) importExcelForTemplate(file)
+                  event.currentTarget.value = ''
+                }}
+              />
+            )}
             <ExcelMapper
               workbook={excelWorkbook}
-              onLoadAnother={() => document.getElementById('excel-import')?.click()}
+              template={excelTemplate}
+              onLoadAnother={() => document.getElementById(excelTemplate ? 'excel-template-reimport' : 'excel-import')?.click()}
               onCreateComponent={component => {
                 setGuidedComponents(current => [...current, component])
                 messageApi.success(t('guided.created', { name: component.name }))
@@ -602,7 +632,7 @@ function Studio() {
                 setWorkspaceView('visual')
                 setBuilderNeedsSampleShell(false)
                 setPhase('build')
-                messageApi.success(t('excel.generated'))
+                messageApi.success(t(excelTemplate ? 'excel.templateGenerated' : 'excel.generated'))
               }}
             />
           </section>
@@ -631,7 +661,25 @@ function Studio() {
                 <Typography.Text type="secondary" className="workspace-eyebrow">{t('builder.location')}</Typography.Text>
                 <Breadcrumb items={breadcrumbs} />
               </div>
-              <Segmented
+              <div className="workspace-toolbar-actions">
+                <Button
+                  icon={<FileExcelOutlined />}
+                  onClick={() => document.getElementById('excel-template-import')?.click()}
+                >
+                  {t('excel.populateFromExcel')}
+                </Button>
+                <input
+                  id="excel-template-import"
+                  type="file"
+                  accept=".xlsx,.xls,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv"
+                  hidden
+                  onChange={event => {
+                    const file = event.target.files?.[0]
+                    if (file) importExcelForTemplate(file)
+                    event.currentTarget.value = ''
+                  }}
+                />
+                <Segmented
                 value={workspaceView}
                 options={[
                   { value: 'visual', label: t('builder.visual'), icon: <ApartmentOutlined /> },
@@ -640,7 +688,8 @@ function Studio() {
                   { value: 'analysis', label: t('builder.analysis'), icon: <ExperimentOutlined />, disabled: !analysisReady },
                 ]}
                 onChange={value => setWorkspaceView(value as WorkspaceView)}
-              />
+                />
+              </div>
             </div>
 
             <div className={`workspace-content workspace-${workspaceView}`}>

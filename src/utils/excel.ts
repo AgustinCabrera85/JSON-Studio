@@ -18,6 +18,10 @@ export interface ExcelSheetData {
   rows: JsonValue[][]
   profiles: ExcelColumnProfile[]
   rowCount: number
+  /** 1-based row number selected as the header row in the imported worksheet matrix. */
+  headerRowNumber: number
+  /** 1-based worksheet row number for every row in `rows`. */
+  rowNumbers: number[]
 }
 
 export interface ExcelWorkbookData {
@@ -102,14 +106,46 @@ const inferColumnType = (values: JsonValue[]): ExcelSemanticType => {
   return 'string'
 }
 
-const profileSheet = (name: string, matrix: unknown[][]): ExcelSheetData => {
-  const nonEmptyRows = matrix.filter(row => row.some(cell => !isBlank(cell)))
-  if (nonEmptyRows.length === 0) return { name, headers: [], rows: [], profiles: [], rowCount: 0 }
+const headerRowScore = (row: unknown[], nextRow?: unknown[]) => {
+  const cells = row.filter(cell => !isBlank(cell))
+  if (cells.length === 0) return -Infinity
+  const strings = cells.filter(cell => typeof cell === 'string').length
+  const unique = new Set(cells.map(cell => String(cell).trim().toLowerCase())).size
+  const duplicates = Math.max(0, cells.length - unique)
+  const nextDensity = nextRow ? nextRow.filter(cell => !isBlank(cell)).length : 0
+  // Header rows in real workbooks are usually dense, mostly textual and unique.
+  // This intentionally penalizes title / metadata rows containing only one or two cells.
+  return (cells.length * 5) + (strings * 1.5) + (unique * 1.25) - (duplicates * 0.75) + Math.min(nextDensity, cells.length) * 0.25
+}
 
-  const headerRow = nonEmptyRows[0]
-  const width = Math.max(...nonEmptyRows.map(row => row.length), 0)
+const detectHeaderRowIndex = (matrix: unknown[][]) => {
+  const limit = Math.min(matrix.length, 30)
+  let bestIndex = 0
+  let bestScore = -Infinity
+  for (let index = 0; index < limit; index += 1) {
+    const row = matrix[index] ?? []
+    const score = headerRowScore(row, matrix[index + 1])
+    if (score > bestScore) {
+      bestScore = score
+      bestIndex = index
+    }
+  }
+  return bestIndex
+}
+
+const profileSheet = (name: string, matrix: unknown[][]): ExcelSheetData => {
+  const hasAnyData = matrix.some(row => row.some(cell => !isBlank(cell)))
+  if (!hasAnyData) return { name, headers: [], rows: [], profiles: [], rowCount: 0, headerRowNumber: 1, rowNumbers: [] }
+
+  const headerIndex = detectHeaderRowIndex(matrix)
+  const headerRow = matrix[headerIndex] ?? []
+  const dataRows = matrix
+    .map((row, index) => ({ row, index }))
+    .filter(item => item.index > headerIndex && item.row.some(cell => !isBlank(cell)))
+  const width = Math.max(headerRow.length, ...dataRows.map(item => item.row.length), 0)
   const headers = uniqueHeaders(headerRow, width)
-  const rows = nonEmptyRows.slice(1).map(row => Array.from({ length: width }, (_, index) => normalizeCell(row[index])))
+  const rows = dataRows.map(item => Array.from({ length: width }, (_, index) => normalizeCell(item.row[index])))
+  const rowNumbers = dataRows.map(item => item.index + 1)
 
   const profiles = headers.map((header, index): ExcelColumnProfile => {
     const values = rows.map(row => row[index]).filter(value => !isBlank(value))
@@ -126,7 +162,7 @@ const profileSheet = (name: string, matrix: unknown[][]): ExcelSheetData => {
     }
   })
 
-  return { name, headers, rows, profiles, rowCount: rows.length }
+  return { name, headers, rows, profiles, rowCount: rows.length, headerRowNumber: headerIndex + 1, rowNumbers }
 }
 
 export const parseExcelFile = async (file: File): Promise<ExcelWorkbookData> => {
@@ -157,7 +193,7 @@ export const defaultMappingsForSheet = (sheet: ExcelSheetData): ExcelColumnMappi
   semanticType: profile.inferredType,
 }))
 
-const convertValue = (value: JsonValue, type: JsonType, semanticType?: ExcelSemanticType): JsonValue => {
+export const convertExcelValue = (value: JsonValue, type: JsonType, semanticType?: ExcelSemanticType): JsonValue => {
   if (value === null || value === undefined || value === '') {
     if (type === 'string') return ''
     if (type === 'number') return 0
@@ -216,7 +252,7 @@ const setNested = (target: JsonObject, path: string, value: JsonValue) => {
 export const mapExcelRow = (row: JsonValue[], mappings: ExcelColumnMapping[]): JsonObject => {
   const result: JsonObject = {}
   mappings.filter(mapping => mapping.enabled && mapping.targetPath.trim()).forEach(mapping => {
-    setNested(result, mapping.targetPath, convertValue(row[mapping.columnIndex] ?? null, mapping.jsonType, mapping.semanticType))
+    setNested(result, mapping.targetPath, convertExcelValue(row[mapping.columnIndex] ?? null, mapping.jsonType, mapping.semanticType))
   })
   return result
 }
